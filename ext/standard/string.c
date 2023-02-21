@@ -2264,6 +2264,9 @@ PHP_FUNCTION(strrchr)
 	ZEND_PARSE_PARAMETERS_END();
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
+		if (!Z_STRLEN_P(needle)) {
+			php_error_docref(NULL, E_WARNING, "Empty needle");
+		}
 		found = zend_memrchr(ZSTR_VAL(haystack), *Z_STRVAL_P(needle), ZSTR_LEN(haystack));
 	} else {
 		char needle_chr;
