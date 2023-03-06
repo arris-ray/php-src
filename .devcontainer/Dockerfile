@@ -4,7 +4,7 @@ RUN yum install -y https://repo.ius.io/ius-release-el7.rpm https://dl.fedoraproj
   && yum remove git \
   && yum install -y \
     git236 vim-enhanced wget \
-    gcc gcc-c++ make autoconf automake libtool bison re2c libxml2-devel binutils sqlite-devel \
+    gcc gcc-c++ make autoconf automake libtool bison re2c libxml2-devel binutils sqlite-devel readline-devel \
   && yum clean all
 
 RUN cd /tmp \
