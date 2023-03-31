@@ -1835,6 +1835,32 @@ static void zend_traits_init_trait_structures(zend_class_entry *ce, zend_class_e
 		aliases = ecalloc(i, sizeof(zend_class_entry*));
 		i = 0;
 		while (ce->trait_aliases[i]) {
+			/** Perform diagnostic check to report if any ambiguous trait methods are detected */
+			zend_trait_alias *cur_alias = ce->trait_aliases[i];
+			cur_method_ref = &ce->trait_aliases[i]->trait_method;
+			lcname = zend_string_tolower(cur_method_ref->method_name);
+			if (!cur_method_ref->class_name) {
+				trait = NULL;
+				for (j = 0; j < ce->num_traits; j++) {
+					if (traits[j]) {
+						if (zend_hash_exists(&traits[j]->function_table, lcname)) {
+							if (!trait) {
+								trait = traits[j];
+								continue;
+							}
+
+							zend_error(E_DEPRECATED,
+									   "An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity",
+									   ZSTR_VAL(cur_method_ref->method_name),
+									   ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),
+									   ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name),
+									   ZSTR_VAL(traits[j]->name), ZSTR_VAL(cur_method_ref->method_name));
+							break;
+						}
+					}
+				}
+			}
+
 			/** For all aliases with an explicit class name, resolve the class now. */
 			if (ce->trait_aliases[i]->trait_method.class_name) {
 				cur_method_ref = &ce->trait_aliases[i]->trait_method;
