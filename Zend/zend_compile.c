@@ -3395,6 +3395,35 @@ static int zend_try_compile_ct_bound_init_user_func(zend_ast *name_ast, uint32_t
 }
 /* }}} */
 
+void zend_warn_named_params_cufa(zend_ast *ast) /* {{{ */
+{
+	if (ast->kind != ZEND_AST_ARRAY) {
+		return;
+	}
+
+	int i;
+	zend_ast_list *ast_list = zend_ast_get_list(ast);
+	for (i = 0; i < ast_list->children; ++i) {
+		zend_ast *ast_elem = ast_list->child[i];
+		if (ast_elem == NULL) {
+			continue;
+		}
+
+		zend_ast *ast_key = ast_elem->child[1];
+		if (ast_key->kind != ZEND_AST_ZVAL) {
+			continue;
+		}
+
+		zend_string *key_name = zend_ast_get_str(ast_key);
+		if (key_name == NULL) {
+			continue;
+		}
+
+		zend_error(E_WARNING, "String key '%s' will be interpreted as a named parameter in PHP 8", ZSTR_VAL(key_name));	
+	}
+}
+/* }}} */
+
 static void zend_compile_init_user_func(zend_ast *name_ast, uint32_t num_args, zend_string *orig_func_name) /* {{{ */
 {
 	zend_op *opline;
@@ -3422,6 +3451,7 @@ int zend_compile_func_cufa(znode *result, zend_ast_list *args, zend_string *lcna
 		return FAILURE;
 	}
 
+	zend_warn_named_params_cufa(args->child[1]);
 	zend_compile_init_user_func(args->child[0], 0, lcname);
 	if (args->child[1]->kind == ZEND_AST_CALL
 	 && args->child[1]->child[0]->kind == ZEND_AST_ZVAL
