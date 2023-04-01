@@ -2029,6 +2029,9 @@ PHP_FUNCTION(stripos)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (Z_STRLEN_P(needle) == 0 || Z_STRLEN_P(needle) > ZSTR_LEN(haystack)) {
+			if (Z_STRLEN_P(needle) == 0) {
+				php_error_docref(NULL, E_WARNING, "Empty needle");
+			}
 			RETURN_FALSE;
 		}
 
@@ -2172,6 +2175,9 @@ PHP_FUNCTION(strripos)
 	}
 
 	if ((ZSTR_LEN(haystack) == 0) || (ZSTR_LEN(needle) == 0)) {
+		if (ZSTR_LEN(needle) == 0) {
+			php_error_docref(NULL, E_WARNING, "Empty needle");
+		}
 		ZSTR_ALLOCA_FREE(ord_needle, use_heap);
 		RETURN_FALSE;
 	}
