@@ -307,6 +307,8 @@ parse_host:
 		if (p < e) {
 			ret->fragment = zend_string_init(p, (e - p), 0);
 			php_replace_controlchars_ex(ZSTR_VAL(ret->fragment), ZSTR_LEN(ret->fragment));
+		} else {
+			php_error_docref(NULL, E_DEPRECATED, "Empty URL fragment will be included in the result hash for PHP 8");
 		}
 		e = p-1;
 	}
@@ -317,6 +319,8 @@ parse_host:
 		if (p < e) {
 			ret->query = zend_string_init(p, (e - p), 0);
 			php_replace_controlchars_ex(ZSTR_VAL(ret->query), ZSTR_LEN(ret->query));
+		} else {
+			php_error_docref(NULL, E_DEPRECATED, "Empty string URL query will be included in the result hash for PHP 8");
 		}
 		e = p-1;
 	}
