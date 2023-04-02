@@ -2398,14 +2398,19 @@ PHP_FUNCTION(substr)
 {
 	zend_string *str;
 	zend_long l = 0, f;
+	zend_bool l_is_default = 1;
 	int argc = ZEND_NUM_ARGS();
 
 	ZEND_PARSE_PARAMETERS_START(2, 3)
 		Z_PARAM_STR(str)
 		Z_PARAM_LONG(f)
 		Z_PARAM_OPTIONAL
-		Z_PARAM_LONG(l)
+		Z_PARAM_LONG_EX(l, l_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
+
+	if (l_is_default) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
+	}
 
 	if (f > (zend_long)ZSTR_LEN(str)) {
 		RETURN_FALSE;
@@ -5786,6 +5791,7 @@ PHP_FUNCTION(strnatcasecmp)
 PHP_FUNCTION(substr_count)
 {
 	char *haystack, *needle;
+	zend_bool length_is_default = 1;
 	zend_long offset = 0, length = 0;
 	int ac = ZEND_NUM_ARGS();
 	zend_long count = 0;
@@ -5798,8 +5804,12 @@ PHP_FUNCTION(substr_count)
 		Z_PARAM_STRING(needle, needle_len)
 		Z_PARAM_OPTIONAL
 		Z_PARAM_LONG(offset)
-		Z_PARAM_LONG(length)
+		Z_PARAM_LONG_EX(length, length_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
+
+	if (length_is_default) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
+	}
 
 	if (needle_len == 0) {
 		php_error_docref(NULL, E_WARNING, "Empty substring");
@@ -6340,6 +6350,10 @@ PHP_FUNCTION(substr_compare)
 		Z_PARAM_LONG_EX(len, len_is_default, 1, 0)
 		Z_PARAM_BOOL(cs)
 	ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
+
+	if (len_is_default) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
+	}
 
 	if (!len_is_default && len <= 0) {
 		if (len == 0) {
