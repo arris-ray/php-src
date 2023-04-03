@@ -2090,6 +2090,9 @@ PHP_FUNCTION(strrpos)
 	ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
 	if (Z_TYPE_P(zneedle) == IS_STRING) {
+		if (Z_STRLEN_P(zneedle) == 0) {
+			php_error_docref(NULL, E_WARNING, "Empty needle");
+		}
 		needle = Z_STRVAL_P(zneedle);
 		needle_len = Z_STRLEN_P(zneedle);
 	} else {
