@@ -1849,7 +1849,7 @@ static void zend_traits_init_trait_structures(zend_class_entry *ce, zend_class_e
 								continue;
 							}
 
-							zend_error(E_DEPRECATED,
+							zend_error(E_WARNING,
 									   "An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity",
 									   ZSTR_VAL(cur_method_ref->method_name),
 									   ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),

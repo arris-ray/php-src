@@ -2059,7 +2059,7 @@ static int compare_long_to_string(zend_long lval, zend_string *str) /* {{{ */
 	/* Don't report a warning if we're using == and the comparison changed between 1/-1. */
 	zend_bool cmp_result_changed_observably = (str_cmp_result != num_cmp_result) && (str_cmp_result == 0 || num_cmp_result == 0);
 	if (cmp_result_changed_observably) {
-		zend_error(E_DEPRECATED, "Result of comparison between %ld and \"%s\" will change (%d to %d) in PHP8", 
+		zend_error(E_WARNING, "Result of comparison between %ld and \"%s\" will change (%d to %d) in PHP 8", 
 			lval, 
 			ZSTR_VAL(str), 
 			(num_cmp_result == 0) ? 1 : 0,  
@@ -2110,8 +2110,8 @@ static int compare_double_to_string(double dval, zend_string *str) /* {{{ */
 	/* Don't report a warning if we're using == and the comparison changed between 1/-1. */
 	zend_bool cmp_result_changed_observably = (str_cmp_result != num_cmp_result) && (str_cmp_result == 0 || num_cmp_result == 0);
 	if (cmp_result_changed_observably) {
-		zend_error(E_DEPRECATED,
-			"Result of comparison between %G and \"%s\" will change (%d to %d) in PHP8",
+		zend_error(E_WARNING,
+			"Result of comparison between %G and \"%s\" will change (%d to %d) in PHP 8",
 			dval, 
 			ZSTR_VAL(str), 
 			((num_cmp_result == 0) ? 1 : 0), 
