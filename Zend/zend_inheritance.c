@@ -1750,6 +1750,59 @@ static uint32_t zend_check_trait_usage(zend_class_entry *ce, zend_class_entry *t
 }
 /* }}} */
 
+/** {{{ zend_warn_ambiguous_trait_methods
+ * Emits a warning when binding multiple Traits to a PHP Class will yield an ambiguous method.
+ * 
+ * This condition will become a fatal error in PHP 8.
+ * 
+ * @param zend_class_entry* ce A PHP Class undergoing compilation by the Zend engine that contains Traits which will be bound to the Class.
+ * @param zend_class_entry** traits An array of pointers to all Traits being bound to the given Class.
+ * @param int trait_index The index of the Trait we're currently binding to the given Class.
+ * @see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.other
+ */
+static void zend_warn_ambiguous_trait_methods(zend_class_entry *ce, zend_class_entry **traits, int trait_index)
+{
+	// If the current Trait method is bound to a class, nothing more to do here
+	size_t i = trait_index, j = 0;
+	zend_trait_method_reference *cur_method_ref = &ce->trait_aliases[i]->trait_method;
+	if (cur_method_ref->class_name) {
+		return;
+	}
+
+	// Get the lowercase name of the current Trait method under consideration
+	// NOTE: This allocates memory on the heap that must be freed
+	zend_string *lcname = zend_string_tolower(cur_method_ref->method_name);
+
+	// Scan every Trait on the given Class for the current method name under consideration
+	zend_class_entry *trait = NULL;
+	for (j = 0; j < ce->num_traits; j++) {
+		if (!traits[j]) {
+			continue;
+		}
+
+		if (zend_hash_exists(&traits[j]->function_table, lcname)) {
+			// Establish a point-of-reference Trait
+			if (!trait) {
+				trait = traits[j];
+				continue;
+			}
+
+			// Emit warning
+			zend_error(E_WARNING,
+						"An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity",
+						ZSTR_VAL(cur_method_ref->method_name),
+						ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),
+						ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name),
+						ZSTR_VAL(traits[j]->name), ZSTR_VAL(cur_method_ref->method_name));
+			break;
+		}
+	}
+
+	// Free heap allocated memory
+	zend_string_release_ex(lcname, 0);
+}
+/* }}} */
+
 static void zend_traits_init_trait_structures(zend_class_entry *ce, zend_class_entry **traits, HashTable ***exclude_tables_ptr, zend_class_entry ***aliases_ptr) /* {{{ */
 {
 	size_t i, j = 0;
@@ -1835,32 +1888,6 @@ static void zend_traits_init_trait_structures(zend_class_entry *ce, zend_class_e
 		aliases = ecalloc(i, sizeof(zend_class_entry*));
 		i = 0;
 		while (ce->trait_aliases[i]) {
-			/** Perform diagnostic check to report if any ambiguous trait methods are detected */
-			zend_trait_alias *cur_alias = ce->trait_aliases[i];
-			cur_method_ref = &ce->trait_aliases[i]->trait_method;
-			lcname = zend_string_tolower(cur_method_ref->method_name);
-			if (!cur_method_ref->class_name) {
-				trait = NULL;
-				for (j = 0; j < ce->num_traits; j++) {
-					if (traits[j]) {
-						if (zend_hash_exists(&traits[j]->function_table, lcname)) {
-							if (!trait) {
-								trait = traits[j];
-								continue;
-							}
-
-							zend_error(E_WARNING,
-									   "An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity",
-									   ZSTR_VAL(cur_method_ref->method_name),
-									   ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),
-									   ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name),
-									   ZSTR_VAL(traits[j]->name), ZSTR_VAL(cur_method_ref->method_name));
-							break;
-						}
-					}
-				}
-			}
-
 			/** For all aliases with an explicit class name, resolve the class now. */
 			if (ce->trait_aliases[i]->trait_method.class_name) {
 				cur_method_ref = &ce->trait_aliases[i]->trait_method;
@@ -1877,6 +1904,9 @@ static void zend_traits_init_trait_structures(zend_class_entry *ce, zend_class_e
 					zend_error_noreturn(E_COMPILE_ERROR, "An alias was defined for %s::%s but this method does not exist", ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name));
 				}
 				zend_string_release_ex(lcname, 0);
+			} else {
+				/** Perform diagnostic check to report if any ambiguous trait methods are detected */
+				zend_warn_ambiguous_trait_methods(ce, traits, i);
 			}
 			i++;
 		}

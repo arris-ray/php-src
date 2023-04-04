@@ -2022,7 +2022,14 @@ static void ZEND_FASTCALL convert_compare_result_to_long(zval *result) /* {{{ */
 }
 /* }}} */
 
-static int compare_long_to_string(zend_long lval, zend_string *str) /* {{{ */
+/** {{{ compare_long_to_string
+ * Emits a warning when a long value has a non-strict comparison with a string value that will yield a different result in PHP 8.
+ * 
+ * @param zend_long lval
+ * @param zend_string* str
+ * @see https://github.com/php/php-src/pull/3917
+ */
+static int compare_long_to_string(zend_long lval, zend_string *str) 
 {
 	zend_long str_lval;
 	double str_dval;
@@ -2072,7 +2079,14 @@ static int compare_long_to_string(zend_long lval, zend_string *str) /* {{{ */
 }
 /* }}} */
 
-static int compare_double_to_string(double dval, zend_string *str) /* {{{ */
+/** {{{ compare_double_to_string
+ * Emits a warning when a double value has a non-strict comparison with a string value that will yield a different result in PHP 8.
+ * 
+ * @param double dval
+ * @param zend_string* str
+ * @see https://github.com/php/php-src/pull/3917
+ */
+static int compare_double_to_string(double dval, zend_string *str) 
 {
 	zend_long str_lval;
 	double str_dval;
@@ -2124,13 +2138,15 @@ static int compare_double_to_string(double dval, zend_string *str) /* {{{ */
 }
 /* }}} */
 
-/**
- * Check for PHP8 numeric-string comparison behavior change
+/** {{{ warn_numeric_string_comparison
+ * Emits a warning when a numeric-to-string comparison will yield a behavior change in PHP 8.
  * 
- * @link https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
- * @link https://github.com/php/php-src/pull/3917
+ * @param zval* op1 The first operand of a comparison.
+ * @param zval* op2 The second operand of a comparison.
+ * @see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
+ * @see https://github.com/php/php-src/pull/3917
  */
-static int warn_numeric_string_comparison(zval *op1, zval *op2) /* {{{ */
+static int warn_numeric_string_comparison(zval *op1, zval *op2) 
 {
 	switch (TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2)))
 	{
