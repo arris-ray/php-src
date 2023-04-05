@@ -565,6 +565,49 @@ static zend_always_inline size_t calculate_unit_length(pcre_cache_entry *pce, ch
 }
 /* }}} */
 
+
+/** {{{ static pcre_warn_invalid_regex_escape_sequences 
+ * Emit warning if invalid escape sequences are detected in the given regex pattern.
+ * 
+ * This function will compile the given regex pattern with the the PCRE extra modifier ("X") enabled. In doing so,
+ * it will emit a warning if the given regex pattern contains any invalid escape sequences. 
+ * 
+ * The new warning will indicate cases where regex patterns that may currently parse successfully in PHP 7 will fail in PHP 8.
+ * 
+ * @param char* pattern A regex pattern.
+ * @param size_t pattern_len The character length of the regex pattern.
+ * @param uint32_t coptions Compilation options for the given regex pattern.
+ * @param uint32_t extra_coptions Extra compilation options for the given regex pattern, specifically the PCRE extra modifier.
+ * @param pcre2_compile_context* cctx Contextual data structure used for compiling the given regex pattern.
+ * @param PCRE2_UCHAR* error_buffer A character buffer to store any regex compilation failure's error message.
+ * @param size_t error_buffer_len Length of the character buffer.
+ */ 
+static zend_always_inline void pcre_warn_invalid_regex_escape_sequences(char *pattern, size_t pattern_len, uint32_t coptions, uint32_t extra_coptions, pcre2_compile_context *cctx, PCRE2_UCHAR *error_buffer, size_t error_buffer_len)
+{
+	// Prevent this extra regex compliation if the PCRE extra modifier is already set
+	if ((extra_coptions & PCRE2_EXTRA_BAD_ESCAPE_IS_LITERAL) == 0) {
+		return;
+	}
+
+	// Enable the PCRE extra modifier
+	uint32_t original_extra_coptions = extra_coptions;
+	extra_coptions &= ~PCRE2_EXTRA_BAD_ESCAPE_IS_LITERAL;
+	pcre2_set_compile_extra_options(cctx, extra_coptions);
+
+	// Compile regex pattern configured to report invalid escape sequences 
+	int errnumber;
+	PCRE2_SIZE erroffset;
+	pcre2_code *re = pcre2_compile((PCRE2_SPTR)pattern, pattern_len, coptions, &errnumber, &erroffset, cctx);
+	if (re == NULL) {
+		pcre2_get_error_message(errnumber, error_buffer, error_buffer_len);
+		php_error_docref(NULL, E_WARNING, "Compilation will fail in PHP 8: %s at offset %zu", error_buffer, erroffset);
+	}
+
+	// Restore the original compile options 
+	pcre2_set_compile_extra_options(cctx, original_extra_coptions);
+}
+/* }}} */
+
 /* {{{ pcre_get_compiled_regex_cache
  */
 PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, int locale_aware)
@@ -780,6 +823,7 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, in
 	}
 
 	/* Compile pattern and display a warning if compilation failed. */
+	pcre_warn_invalid_regex_escape_sequences(pattern, pattern_len, coptions, extra_coptions, cctx, error, sizeof(error));
 	re = pcre2_compile((PCRE2_SPTR)pattern, pattern_len, coptions, &errnumber, &erroffset, cctx);
 
 	/* Reset the compile context extra options to default. */
@@ -791,6 +835,7 @@ PHPAPI pcre_cache_entry* pcre_get_compiled_regex_cache_ex(zend_string *regex, in
 		if (key != regex) {
 			zend_string_release_ex(key, 0);
 		}
+
 		pcre2_get_error_message(errnumber, error, sizeof(error));
 		php_error_docref(NULL,E_WARNING, "Compilation failed: %s at offset %zu", error, erroffset);
 		pcre_handle_exec_error(PCRE2_ERROR_INTERNAL);
