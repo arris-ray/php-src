@@ -2416,7 +2416,7 @@ PHP_FUNCTION(substr)
 	}
 
 	if (f > (zend_long)ZSTR_LEN(str)) {
-		php_error_docref(NULL, E_DEPRECATED, "Method will return empty string for out-of-bound offsets in PHP 8");
+		php_error_docref(NULL, E_DEPRECATED, "Method will return empty string for out-of-bound offset in PHP 8 (length=%d, offset=%d)", (zend_long)ZSTR_LEN(str), f);
 		RETURN_FALSE;
 	} else if (f < 0) {
 		/* if "from" position is negative, count start position from the end
