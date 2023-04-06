@@ -3220,6 +3220,8 @@ get_function_via_handler:
 						zend_error(severity, "Non-static method %s::%s() %s be called statically", ZSTR_VAL(fcc->calling_scope->name), ZSTR_VAL(fcc->function_handler->common.function_name), verb);
 					}
 				}
+
+				zend_error(E_DEPRECATED, "Non-static method %s::%s() is called statically", ZSTR_VAL(fcc->calling_scope->name), ZSTR_VAL(fcc->function_handler->common.function_name));
 			}
 			if (retval
 			 && !(fcc->function_handler->common.fn_flags & ZEND_ACC_PUBLIC)
