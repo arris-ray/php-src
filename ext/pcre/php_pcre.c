@@ -601,6 +601,8 @@ static zend_always_inline void pcre_warn_invalid_regex_escape_sequences(char *pa
 	if (re == NULL) {
 		pcre2_get_error_message(errnumber, error_buffer, error_buffer_len);
 		php_error_docref(NULL, E_WARNING, "Compilation will fail in PHP 8: %s at offset %zu", error_buffer, erroffset);
+	} else {
+		pcre2_code_free(re);
 	}
 
 	// Restore the original compile options 
