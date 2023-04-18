@@ -12,5 +12,5 @@ var_dump(is_callable('Foo::bar'));
 
 ?>
 --EXPECTF--
-Deprecated: Non-static method Foo::bar() is called statically in %s on line %d
+Deprecated: Non-static method Foo::bar() is called statically will fail in PHP 8 in %s on line %d
 bool(true)
