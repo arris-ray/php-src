@@ -8,9 +8,8 @@ class Foo {
     public static function qux() {}
 }
 
-var_dump(is_callable('Foo::bar')); 
+var_dump(is_callable('Foo::qux')); 
 
 ?>
 --EXPECTF--
-Deprecated: Non-static method Foo::bar() is called statically will fail in PHP 8 in %s on line %d
 bool(true)
