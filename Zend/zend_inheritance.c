@@ -1763,8 +1763,8 @@ static uint32_t zend_check_trait_usage(zend_class_entry *ce, zend_class_entry *t
 static void zend_warn_ambiguous_trait_methods(zend_class_entry *ce, zend_class_entry **traits, int trait_index)
 {
 	// If the current Trait method is bound to a class, nothing more to do here
-	size_t i = trait_index, j = 0;
-	zend_trait_method_reference *cur_method_ref = &ce->trait_aliases[i]->trait_method;
+	size_t i = 0;
+	zend_trait_method_reference *cur_method_ref = &ce->trait_aliases[trait_index]->trait_method;
 	if (cur_method_ref->class_name) {
 		return;
 	}
@@ -1775,15 +1775,15 @@ static void zend_warn_ambiguous_trait_methods(zend_class_entry *ce, zend_class_e
 
 	// Scan every Trait on the given Class for the current method name under consideration
 	zend_class_entry *trait = NULL;
-	for (j = 0; j < ce->num_traits; j++) {
-		if (!traits[j]) {
+	for (i = 0; i < ce->num_traits; i++) {
+		if (!traits[i]) {
 			continue;
 		}
 
-		if (zend_hash_exists(&traits[j]->function_table, lcname)) {
+		if (zend_hash_exists(&traits[i]->function_table, lcname)) {
 			// Establish a point-of-reference Trait
 			if (!trait) {
-				trait = traits[j];
+				trait = traits[i];
 				continue;
 			}
 
@@ -1791,9 +1791,9 @@ static void zend_warn_ambiguous_trait_methods(zend_class_entry *ce, zend_class_e
 			zend_error(E_WARNING,
 						"An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity because this will fail in PHP 8",
 						ZSTR_VAL(cur_method_ref->method_name),
-						ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),
+						ZSTR_VAL(trait->name), ZSTR_VAL(traits[i]->name),
 						ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name),
-						ZSTR_VAL(traits[j]->name), ZSTR_VAL(cur_method_ref->method_name));
+						ZSTR_VAL(traits[i]->name), ZSTR_VAL(cur_method_ref->method_name));
 			break;
 		}
 	}

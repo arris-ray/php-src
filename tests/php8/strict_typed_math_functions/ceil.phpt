@@ -7,5 +7,5 @@ var_dump(ceil("-1.5"));
 
 ?>
 --EXPECTF--
-Warning: ceil(): Method will produce a TypeError in PHP 8 when strict_types are enabled in %s on line %d
+Deprecated: ceil(): Method will produce a TypeError in PHP 8 when strict_types are enabled in %s on line %d
 float(-1)
