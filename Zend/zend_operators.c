@@ -2051,7 +2051,6 @@ static int compare_long_to_string(zend_long lval, zend_string *str)
 	/* TODO Avoid duplicate is_numeric_string call. */
 	zend_bool is_numeric = is_numeric_string(ZSTR_VAL(str), ZSTR_LEN(str), &str_lval, &str_dval, 0);
 	if (is_numeric) {
-	// if (type != 0) {
 		/* For numeric strings, the comparison result stays the same. */
 		return num_cmp_result;
 	}
