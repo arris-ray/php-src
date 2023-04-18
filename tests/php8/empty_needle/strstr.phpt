@@ -7,5 +7,5 @@ var_dump(strstr("foobar", ""));
 
 ?>
 --EXPECTF--
-Warning: strstr(): Empty needle in %s on line %d
+Warning: strstr(): Empty needle may return a different result in PHP 8 in %s on line %d
 bool(false)

@@ -7,5 +7,5 @@ var_dump(strripos("foobar", ""));
 
 ?>
 --EXPECTF--
-Warning: strripos(): Empty needle in %s on line %d
+Warning: strripos(): Empty needle may return a different result in PHP 8 in %s on line %d
 bool(false)

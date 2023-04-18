@@ -50,11 +50,11 @@ NULL
 
 -- Testing stristr() function with empty haystack --
 
-Warning: stristr(): Empty needle in %s on line %d
+Warning: stristr(): Empty needle may return a different result in PHP 8 in %s on line %d
 bool(false)
 
 -- Testing stristr() function with empty needle --
 
-Warning: stristr(): Empty needle in %s on line %d
+Warning: stristr(): Empty needle may return a different result in PHP 8 in %s on line %d
 bool(false)
 ===DONE===

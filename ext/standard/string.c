@@ -1848,7 +1848,7 @@ PHP_FUNCTION(stristr)
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		char *orig_needle;
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			efree(haystack_dup);
 			RETURN_FALSE;
 		}
@@ -1904,7 +1904,7 @@ PHP_FUNCTION(strstr)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			RETURN_FALSE;
 		}
 
@@ -1965,7 +1965,7 @@ PHP_FUNCTION(strpos)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			RETURN_FALSE;
 		}
 
@@ -2030,7 +2030,7 @@ PHP_FUNCTION(stripos)
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (Z_STRLEN_P(needle) == 0 || Z_STRLEN_P(needle) > ZSTR_LEN(haystack)) {
 			if (Z_STRLEN_P(needle) == 0) {
-				php_error_docref(NULL, E_WARNING, "Empty needle");
+				php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			}
 			RETURN_FALSE;
 		}
@@ -2091,7 +2091,7 @@ PHP_FUNCTION(strrpos)
 
 	if (Z_TYPE_P(zneedle) == IS_STRING) {
 		if (Z_STRLEN_P(zneedle) == 0) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 		}
 		needle = Z_STRVAL_P(zneedle);
 		needle_len = Z_STRLEN_P(zneedle);
@@ -2179,7 +2179,7 @@ PHP_FUNCTION(strripos)
 
 	if ((ZSTR_LEN(haystack) == 0) || (ZSTR_LEN(needle) == 0)) {
 		if (ZSTR_LEN(needle) == 0) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 		}
 		ZSTR_ALLOCA_FREE(ord_needle, use_heap);
 		RETURN_FALSE;
@@ -2274,7 +2274,7 @@ PHP_FUNCTION(strrchr)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 		}
 		found = zend_memrchr(ZSTR_VAL(haystack), *Z_STRVAL_P(needle), ZSTR_LEN(haystack));
 	} else {
