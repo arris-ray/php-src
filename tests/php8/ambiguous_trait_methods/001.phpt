@@ -29,5 +29,5 @@ $b->f1();
 
 ?>
 --EXPECTF--
-Warning: An alias was defined for method func(), which exists in both T1 and T2. Use T1::func or T2::func to resolve the ambiguity in %s on line %d
+Warning: An alias was defined for method func(), which exists in both T1 and T2. Use T1::func or T2::func to resolve the ambiguity because this will fail in PHP 8 in %s on line %d
 From T1

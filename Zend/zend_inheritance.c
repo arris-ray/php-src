@@ -1789,7 +1789,7 @@ static void zend_warn_ambiguous_trait_methods(zend_class_entry *ce, zend_class_e
 
 			// Emit warning
 			zend_error(E_WARNING,
-						"An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity",
+						"An alias was defined for method %s(), which exists in both %s and %s. Use %s::%s or %s::%s to resolve the ambiguity because this will fail in PHP 8",
 						ZSTR_VAL(cur_method_ref->method_name),
 						ZSTR_VAL(trait->name), ZSTR_VAL(traits[j]->name),
 						ZSTR_VAL(trait->name), ZSTR_VAL(cur_method_ref->method_name),
