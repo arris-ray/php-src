@@ -2411,9 +2411,9 @@ PHP_FUNCTION(substr)
 		Z_PARAM_LONG_EX(l, l_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
 
-	if (l_is_default) {
-		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
-	}
+	if (l_is_default && argc == 3) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is explicitly null");
+	} 
 
 	if (f > (zend_long)ZSTR_LEN(str)) {
 		php_error_docref(NULL, E_DEPRECATED, "Method will return empty string for out-of-bound offset in PHP 8 (length=%d, offset=%d)", (zend_long)ZSTR_LEN(str), f);
@@ -5811,8 +5811,8 @@ PHP_FUNCTION(substr_count)
 		Z_PARAM_LONG_EX(length, length_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
 
-	if (length_is_default) {
-		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
+	if (length_is_default && ac == 4) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is explicitly null");
 	}
 
 	if (needle_len == 0) {
