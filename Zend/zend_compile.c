@@ -3395,6 +3395,58 @@ static int zend_try_compile_ct_bound_init_user_func(zend_ast *name_ast, uint32_t
 }
 /* }}} */
 
+/** {{{ zend_warn_named_params_cufa
+ * Emits a warning when call_user_func_array is given an associative array.
+ * 
+ * In PHP 8, arguments in an associative array passed to call_user_func_array will be treated as named parameters for the target function.
+ *  
+ * @param zend_ast* ast A Node in an Abstract Syntax Tree (AST) that represents the args array passed to a call_user_func_array invocation.
+ * @see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.other
+ * @see https://wiki.php.net/rfc/abstract_syntax_tree
+ */
+void zend_warn_named_params_cufa(zend_ast *ast) /* {{{ */
+{
+	// Confirm the current AST node is an array
+	if (ast->kind != ZEND_AST_ARRAY) {
+		return;
+	}
+
+	// Coerce the current AST node to an array
+	zend_ast_list *ast_list = zend_ast_get_list(ast);
+
+	// Inspect every child node to determine if it's key is a string value
+	int i;
+	for (i = 0; i < ast_list->children; ++i) {
+		// Get the i'th element of the array
+		zend_ast *ast_elem = ast_list->child[i];
+		if (ast_elem == NULL) {
+			continue;
+		}
+
+		// Get the key of the i'th element
+		zend_ast *ast_key = ast_elem->child[1];
+		if (ast_key->kind != ZEND_AST_ZVAL) {
+			continue;
+		}
+
+		// Filter for string keys
+		zval *zval_key = zend_ast_get_zval(ast_key);
+		if (Z_TYPE_P(zval_key) != IS_STRING) {
+			continue;
+		}
+
+		// Filter for non-null string keys
+		zend_string *key_name = zend_ast_get_str(ast_key);
+		if (key_name == NULL) {
+			continue;
+		}
+
+		// Emit warning
+		zend_error(E_WARNING, "String key '%s' will be interpreted as a named parameter in PHP 8", ZSTR_VAL(key_name));	
+	}
+}
+/* }}} */
+
 static void zend_compile_init_user_func(zend_ast *name_ast, uint32_t num_args, zend_string *orig_func_name) /* {{{ */
 {
 	zend_op *opline;
@@ -3422,6 +3474,7 @@ int zend_compile_func_cufa(znode *result, zend_ast_list *args, zend_string *lcna
 		return FAILURE;
 	}
 
+	zend_warn_named_params_cufa(args->child[1]);
 	zend_compile_init_user_func(args->child[0], 0, lcname);
 	if (args->child[1]->kind == ZEND_AST_CALL
 	 && args->child[1]->child[0]->kind == ZEND_AST_ZVAL

@@ -2022,6 +2022,165 @@ static void ZEND_FASTCALL convert_compare_result_to_long(zval *result) /* {{{ */
 }
 /* }}} */
 
+/** {{{ compare_long_to_string
+ * Emits a warning when a long value has a non-strict comparison with a string value that will yield a different result in PHP 8.
+ * 
+ * @param zend_long lval
+ * @param zend_string* str
+ * @see https://github.com/php/php-src/pull/3917
+ */
+static int compare_long_to_string(zend_long lval, zend_string *str) 
+{
+	zend_long str_lval;
+	double str_dval;
+	int num_cmp_result;
+
+	// Perform numeric comparison
+	// NOTE: Allowing for errors in numeric conversion, e.g. "42foo" -> 42
+	zend_uchar type = is_numeric_string(ZSTR_VAL(str), ZSTR_LEN(str), &str_lval, &str_dval, 1);
+	if (type == IS_LONG) {
+		num_cmp_result = lval > str_lval ? 1 : lval < str_lval ? -1 : 0;
+	} else if (type == IS_DOUBLE) {
+		double diff = (double) lval - str_dval;
+		num_cmp_result = ZEND_NORMALIZE_BOOL(diff);
+	} else {
+		num_cmp_result = ZEND_NORMALIZE_BOOL(lval);
+	}
+
+	// If the arguments for comparison are truly numeric, we can return early
+	/* TODO Avoid duplicate is_numeric_string call. */
+	zend_bool is_numeric = is_numeric_string(ZSTR_VAL(str), ZSTR_LEN(str), &str_lval, &str_dval, 0);
+	if (is_numeric) {
+		/* For numeric strings, the comparison result stays the same. */
+		return num_cmp_result;
+	}
+
+	// Perform a string comparison of the given arguments
+	zend_string *lval_as_str = zend_long_to_str(lval);
+	int str_cmp_result = zend_binary_strcmp(ZSTR_VAL(lval_as_str), ZSTR_LEN(lval_as_str), ZSTR_VAL(str), ZSTR_LEN(str));
+	str_cmp_result = ZEND_NORMALIZE_BOOL(str_cmp_result);
+	zend_string_release(lval_as_str);
+
+	// Report cases where the comparison result will change between PHP7 and PHP8
+	/* Don't report a warning if we're using == and the comparison changed between 1/-1. */
+	zend_bool cmp_result_changed_observably = (str_cmp_result != num_cmp_result) && (str_cmp_result == 0 || num_cmp_result == 0);
+	if (cmp_result_changed_observably) {
+		zend_error(E_WARNING, "Result of comparison between %ld and \"%s\" will change (%d to %d) in PHP 8", 
+			lval, 
+			ZSTR_VAL(str), 
+			(num_cmp_result == 0) ? 1 : 0,  
+			(str_cmp_result == 0) ? 1 : 0
+		);
+	}
+
+	/* Return old (numeric) comparison result. */
+	return num_cmp_result;
+}
+/* }}} */
+
+/** {{{ compare_double_to_string
+ * Emits a warning when a double value has a non-strict comparison with a string value that will yield a different result in PHP 8.
+ * 
+ * @param double dval
+ * @param zend_string* str
+ * @see https://github.com/php/php-src/pull/3917
+ */
+static int compare_double_to_string(double dval, zend_string *str) 
+{
+	zend_long str_lval;
+	double str_dval;
+	int num_cmp_result;
+
+	// Perform numeric comparison
+	zend_uchar type = is_numeric_string(ZSTR_VAL(str), ZSTR_LEN(str), &str_lval, &str_dval, 0);
+	if (type == IS_LONG) {
+		double diff = dval - (double) str_lval;
+		num_cmp_result = ZEND_NORMALIZE_BOOL(diff);
+	} else if (type == IS_DOUBLE) {
+		if (dval == str_dval) {
+			return 0;
+		}
+		num_cmp_result = ZEND_NORMALIZE_BOOL(dval - str_dval);
+	} else {
+		num_cmp_result = ZEND_NORMALIZE_BOOL(dval);
+	}
+
+	// If the arguments for comparison are truly numeric, we can return early
+	/* TODO Avoid duplicate is_numeric_string call. */
+	zend_bool is_numeric = is_numeric_string(ZSTR_VAL(str), ZSTR_LEN(str), &str_lval, &str_dval, 0);
+	if (is_numeric) {
+		/* For numeric strings, the comparison result stays the same. */
+		return num_cmp_result;
+	}
+
+	// Perform a string comparison of the given arguments
+	zend_string *dval_as_str = zend_strpprintf(0, "%.*G", (int) EG(precision), dval);
+	int str_cmp_result = zend_binary_strcmp(ZSTR_VAL(dval_as_str), ZSTR_LEN(dval_as_str), ZSTR_VAL(str), ZSTR_LEN(str));
+	str_cmp_result = ZEND_NORMALIZE_BOOL(str_cmp_result);
+	zend_string_release(dval_as_str);
+
+	// Report cases where the comparison result will change between PHP7 and PHP8
+	/* Don't report a warning if we're using == and the comparison changed between 1/-1. */
+	zend_bool cmp_result_changed_observably = (str_cmp_result != num_cmp_result) && (str_cmp_result == 0 || num_cmp_result == 0);
+	if (cmp_result_changed_observably) {
+		zend_error(E_WARNING,
+			"Result of comparison between %G and \"%s\" will change (%d to %d) in PHP 8",
+			dval, 
+			ZSTR_VAL(str), 
+			((num_cmp_result == 0) ? 1 : 0), 
+			((str_cmp_result == 0) ? 1 : 0)
+		);
+	}
+
+	/* Return old (numeric) comparison result. */
+	return num_cmp_result;
+}
+/* }}} */
+
+/** {{{ warn_numeric_string_comparison
+ * Emits a warning when a numeric-to-string comparison will yield a behavior change in PHP 8.
+ * 
+ * @param zval* op1 The first operand of a comparison.
+ * @param zval* op2 The second operand of a comparison.
+ * @see https://www.php.net/manual/en/migration80.incompatible.php#migration80.incompatible.core.string-number-comparision
+ * @see https://github.com/php/php-src/pull/3917
+ */
+static int warn_numeric_string_comparison(zval *op1, zval *op2) 
+{
+	switch (TYPE_PAIR(Z_TYPE_P(op1), Z_TYPE_P(op2)))
+	{
+		case TYPE_PAIR(IS_LONG, IS_STRING):
+			compare_long_to_string(Z_LVAL_P(op1), Z_STR_P(op2));
+			return SUCCESS;
+
+		case TYPE_PAIR(IS_STRING, IS_LONG):
+			compare_long_to_string(Z_LVAL_P(op2), Z_STR_P(op1));
+			return SUCCESS;
+
+		case TYPE_PAIR(IS_DOUBLE, IS_STRING):
+			if (zend_isnan(Z_DVAL_P(op1)))
+			{
+				return SUCCESS;
+			}
+
+			compare_double_to_string(Z_DVAL_P(op1), Z_STR_P(op2));
+			return SUCCESS;
+
+		case TYPE_PAIR(IS_STRING, IS_DOUBLE):
+			if (zend_isnan(Z_DVAL_P(op2)))
+			{
+				return SUCCESS;
+			}
+
+			compare_double_to_string(Z_DVAL_P(op2), Z_STR_P(op1));
+			return SUCCESS;
+		default:
+			break;
+	}
+	return FAILURE;
+}
+/* }}} */
+
 ZEND_API int ZEND_FASTCALL compare_function(zval *result, zval *op1, zval *op2) /* {{{ */
 {
 	int ret;
@@ -2187,6 +2346,8 @@ ZEND_API int ZEND_FASTCALL compare_function(zval *result, zval *op1, zval *op2) 
 						ZVAL_LONG(result, zval_is_true(op1) ? 0 : -1);
 						return SUCCESS;
 					} else {
+						warn_numeric_string_comparison(op1, op2);
+
 						op1 = zendi_convert_scalar_to_number(op1, &op1_copy, result, 1);
 						op2 = zendi_convert_scalar_to_number(op2, &op2_copy, result, 1);
 						if (EG(exception)) {

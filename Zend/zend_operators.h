@@ -482,6 +482,7 @@ ZEND_API void ZEND_FASTCALL zend_locale_sprintf_double(zval *op ZEND_FILE_LINE_D
 
 #define convert_scalar_to_number_ex(pzv)							\
 	if (Z_TYPE_P(pzv)!=IS_LONG && Z_TYPE_P(pzv)!=IS_DOUBLE) {		\
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a TypeError in PHP 8 when strict_types are enabled"); \
 		convert_scalar_to_number(pzv);					\
 	}
 

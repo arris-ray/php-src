@@ -646,6 +646,7 @@ php_formatted_print_get_array(zval *array, int *argc)
 	int n;
 
 	if (Z_TYPE_P(array) != IS_ARRAY) {
+		php_error_docref(NULL, E_DEPRECATED, "Non-array args will produce a TypeError in PHP 8");
 		convert_to_array(array);
 	}
 

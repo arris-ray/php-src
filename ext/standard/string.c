@@ -1848,7 +1848,7 @@ PHP_FUNCTION(stristr)
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		char *orig_needle;
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			efree(haystack_dup);
 			RETURN_FALSE;
 		}
@@ -1904,7 +1904,7 @@ PHP_FUNCTION(strstr)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			RETURN_FALSE;
 		}
 
@@ -1965,7 +1965,7 @@ PHP_FUNCTION(strpos)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (!Z_STRLEN_P(needle)) {
-			php_error_docref(NULL, E_WARNING, "Empty needle");
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
 			RETURN_FALSE;
 		}
 
@@ -2029,6 +2029,9 @@ PHP_FUNCTION(stripos)
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
 		if (Z_STRLEN_P(needle) == 0 || Z_STRLEN_P(needle) > ZSTR_LEN(haystack)) {
+			if (Z_STRLEN_P(needle) == 0) {
+				php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
+			}
 			RETURN_FALSE;
 		}
 
@@ -2087,6 +2090,9 @@ PHP_FUNCTION(strrpos)
 	ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
 
 	if (Z_TYPE_P(zneedle) == IS_STRING) {
+		if (Z_STRLEN_P(zneedle) == 0) {
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
+		}
 		needle = Z_STRVAL_P(zneedle);
 		needle_len = Z_STRLEN_P(zneedle);
 	} else {
@@ -2172,6 +2178,9 @@ PHP_FUNCTION(strripos)
 	}
 
 	if ((ZSTR_LEN(haystack) == 0) || (ZSTR_LEN(needle) == 0)) {
+		if (ZSTR_LEN(needle) == 0) {
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
+		}
 		ZSTR_ALLOCA_FREE(ord_needle, use_heap);
 		RETURN_FALSE;
 	}
@@ -2264,6 +2273,9 @@ PHP_FUNCTION(strrchr)
 	ZEND_PARSE_PARAMETERS_END();
 
 	if (Z_TYPE_P(needle) == IS_STRING) {
+		if (!Z_STRLEN_P(needle)) {
+			php_error_docref(NULL, E_WARNING, "Empty needle may return a different result in PHP 8");
+		}
 		found = zend_memrchr(ZSTR_VAL(haystack), *Z_STRVAL_P(needle), ZSTR_LEN(haystack));
 	} else {
 		char needle_chr;
@@ -2389,16 +2401,22 @@ PHP_FUNCTION(substr)
 {
 	zend_string *str;
 	zend_long l = 0, f;
+	zend_bool l_is_default = 1;
 	int argc = ZEND_NUM_ARGS();
 
 	ZEND_PARSE_PARAMETERS_START(2, 3)
 		Z_PARAM_STR(str)
 		Z_PARAM_LONG(f)
 		Z_PARAM_OPTIONAL
-		Z_PARAM_LONG(l)
+		Z_PARAM_LONG_EX(l, l_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
 
+	if (l_is_default && argc == 3) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is explicitly null");
+	} 
+
 	if (f > (zend_long)ZSTR_LEN(str)) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will return empty string for out-of-bound offset in PHP 8 (length=%d, offset=%d)", (zend_long)ZSTR_LEN(str), f);
 		RETURN_FALSE;
 	} else if (f < 0) {
 		/* if "from" position is negative, count start position from the end
@@ -5777,6 +5795,7 @@ PHP_FUNCTION(strnatcasecmp)
 PHP_FUNCTION(substr_count)
 {
 	char *haystack, *needle;
+	zend_bool length_is_default = 1;
 	zend_long offset = 0, length = 0;
 	int ac = ZEND_NUM_ARGS();
 	zend_long count = 0;
@@ -5789,8 +5808,12 @@ PHP_FUNCTION(substr_count)
 		Z_PARAM_STRING(needle, needle_len)
 		Z_PARAM_OPTIONAL
 		Z_PARAM_LONG(offset)
-		Z_PARAM_LONG(length)
+		Z_PARAM_LONG_EX(length, length_is_default, 1, 0)
 	ZEND_PARSE_PARAMETERS_END();
+
+	if (length_is_default && ac == 4) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is explicitly null");
+	}
 
 	if (needle_len == 0) {
 		php_error_docref(NULL, E_WARNING, "Empty substring");
@@ -6331,6 +6354,10 @@ PHP_FUNCTION(substr_compare)
 		Z_PARAM_LONG_EX(len, len_is_default, 1, 0)
 		Z_PARAM_BOOL(cs)
 	ZEND_PARSE_PARAMETERS_END_EX(RETURN_FALSE);
+
+	if (len_is_default) {
+		php_error_docref(NULL, E_DEPRECATED, "Method will produce a different result in PHP 8 when length is null");
+	}
 
 	if (!len_is_default && len <= 0) {
 		if (len == 0) {
